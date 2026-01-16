@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>[internal] csv to stops</title>
+</head>
+<body>
+  <h1>mymaps csv to gtfs stops</h1>
+
+  <p>upload ur csv here >~<</p>
+  <input type="file" id="csvFile" accept=".csv">
+  <br><br>
+  <textarea id="csvInput" rows="15" cols="80" placeholder="or paste it here :3"></textarea>
+  <br>
+  <label><input type="checkbox" id="stripNumbers">remove identifier for stop in group from stop name</label><br>
+  <button style="margin-top: 5px" id="convertBtn">convert</button>
+
+  <h2>stops.txt here!!</h2>
+  <textarea id="gtfsOutput" rows="15" cols="80" readonly></textarea>
+  <p style="color: #666"></br></br></br>ik this tool is shitty but it works tho</br>hmu on discord @ax7a</p>
+
+  <script>
+    function baseIdStart(count) {
+      var digits = 3;
+      var limit = 650;
+      while (count > limit) { digits += 1; limit *= 10; }
+      return Math.pow(10, digits - 1);
+    }
+
+    function wktToPoint(wkt) {
+      wkt = wkt.trim();
+      if (wkt.startsWith('"') && wkt.endsWith('"')) {
+        wkt = wkt.substring(1, wkt.length - 1);
+      }
+      var m = /^POINT\s*\(\s*([0-9\.\-]+)\s+([0-9\.\-]+)\s*\)$/i.exec(wkt);
+      if (!m) return { lat: "", lon: "" };
+      return { lon: m[1], lat: m[2] };
+    }
+
+    function baseName(name) {
+      var m = /^(.*\S)\s+(\d{2})$/.exec(name);
+      return m ? m[1] : name;
+    }
+
+    function suffix(name) {
+      var m = /^(.*\S)\s+(\d{2})$/.exec(name);
+      return m ? m[2] : "01";
+    }
+
+    function parseCsvLine(line) {
+      var parts = [];
+      var current = "";
+      var inQuotes = false;
+      for (var i = 0; i < line.length; i++) {
+        var ch = line[i];
+        if (ch === '"') {
+          inQuotes = !inQuotes;
+          current += ch;
+        } else if (ch === "," && !inQuotes) {
+          parts.push(current);
+          current = "";
+        } else {
+          current += ch;
+        }
+      }
+      parts.push(current);
+      return parts;
+    }
+
+    function readCsv(text) {
+      var lines = text.split(/\r?\n/);
+      var rows = [];
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line === "") continue;
+        var parts = parseCsvLine(line);
+        if (parts.length < 2) continue;
+        rows.push(parts);
+      }
+      return rows;
+    }
+
+    function convert() {
+      var csvText = document.getElementById("csvInput").value;
+      var rows = readCsv(csvText);
+
+      if (rows.length === 0) {
+        document.getElementById("gtfsOutput").value = "";
+        return;
+      }
+
+      var header = rows[0];
+      var data = rows.slice(1);
+
+      var wktIdx = header.indexOf("WKT");
+      if (wktIdx === -1) wktIdx = 0;
+      var nameIdx = header.indexOf("nazwa");
+      if (nameIdx === -1) nameIdx = 1;
+
+      var names = [];
+      var nameIndex = {};
+      for (var i = 0; i < data.length; i++) {
+        var row = data[i];
+        if (row.length <= nameIdx) continue;
+        var fullName = row[nameIdx].trim();
+        var base = baseName(fullName);
+        if (!(base in nameIndex)) {
+          nameIndex[base] = true;
+          names.push(base);
+        }
+      }
+
+      var startId = baseIdStart(names.length);
+      var baseToId = {};
+      for (var j = 0; j < names.length; j++) {
+        baseToId[names[j]] = startId + j;
+      }
+
+      var stripNumbers = document.getElementById("stripNumbers").checked;
+
+      var outLines = [];
+      outLines.push("stop_id,stop_name,stop_lat,stop_lon");
+
+      for (var k = 0; k < data.length; k++) {
+        var row2 = data[k];
+        if (row2.length <= nameIdx || row2.length <= wktIdx) continue;
+
+        var fullName2 = row2[nameIdx].trim();
+        var base2 = baseName(fullName2);
+        var code = suffix(fullName2);
+
+        var point = wktToPoint(row2[wktIdx]);
+
+        var idBase = baseToId[base2];
+        var stopId = String(idBase) + "-" + code;
+
+        var stopName = stripNumbers ? base2 : fullName2;
+
+        outLines.push(
+          stopId + "," +
+          stopName.replace(/,/g, " ") + "," +
+          point.lat + "," +
+          point.lon
+        );
+      }
+
+      var headerLine = outLines[0];
+      var dataLines = outLines.slice(1);
+      dataLines.sort(function(a, b) {
+        var idA = a.split(',')[0];
+        var idB = b.split(',')[0];
+
+        var partsA = idA.split('-');
+        var partsB = idB.split('-');
+
+        var baseA = parseInt(partsA[0], 10);
+        var baseB = parseInt(partsB[0], 10);
+
+        if (baseA !== baseB) return baseA - baseB;
+
+        return partsA[1].localeCompare(partsB[1], undefined, { numeric: true });
+        });
+      outLines = [headerLine].concat(dataLines);
+
+      document.getElementById("gtfsOutput").value = outLines.join("\n");
+    }
+
+    document.getElementById("convertBtn").addEventListener("click", convert);
+    document.getElementById("csvInput").addEventListener("input", convert);
+    document.getElementById("stripNumbers").addEventListener("change", convert);
+
+    document.getElementById("csvFile").addEventListener("change", function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        document.getElementById("csvInput").value = ev.target.result;
+        convert();
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
