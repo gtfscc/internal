@@ -54,6 +54,7 @@ Bródno: https://www.wtp.waw.pl/wp-content/uploads/sites/2/2022/09/m_brodno.pdf
 ## Railway stations and their surroundings
 Dw. Centralny (day transit): https://www.wtp.waw.pl/wp-content/uploads/sites/2/2020/07/dw_centralny-dzien.pdf  
 Dw. Centralny (night transit): https://www.wtp.waw.pl/wp-content/uploads/sites/2/2020/07/dw_centralny-noc.pdf  
+Dw. Centralny (actual inside station map): https://mt.rozklad-pkp.pl/files/files/741/originals/warszawa_centralna_mapka_01_2014.pdf  
 Dw. Zachodni: https://www.wtp.waw.pl/wp-content/uploads/sites/2/2020/08/dw_zachodni.pdf  
 Dw. Wschodni: https://www.wtp.waw.pl/wp-content/uploads/sites/2/2020/07/dw_wschodni.pdf  
 Warszawa Ochota / Warszawa Główna / Pl. Zawiszy: https://www.wtp.waw.pl/wp-content/uploads/sites/2/2021/07/wwa_ochota.pdf  
